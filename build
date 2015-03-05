@@ -1,0 +1,51 @@
+#!/bin/bash
+set -e
+
+ruby=$1
+configure_flags=$2
+
+unset GEM_HOME
+unset GEM_PATH
+
+if [[ "$ruby" == "" ]]; then
+  echo "Usage: ./builder.bash 2.2.1 [CONFIGURE_FLAGS]"
+  exit 1
+fi
+
+# Just provide a dummy flag when none is provided.
+if [[ "$configure_flags" == "" ]]; then
+  configure_flags="--disable-install-doc"
+fi
+
+if [[ "$(uname)" == "Linux" ]]; then
+  sudo apt-get -y update
+  sudo apt-get -y upgrade
+  sudo apt-get -y install systemtap systemtap-sdt-dev libjemalloc-dev
+else
+  brew install jemalloc
+fi
+
+if [[ ! -d "$HOME/.sm" ]]; then
+  curl -Ls https://install.smf.sh | bash -
+fi
+
+if [[ ! -d "$HOME/.rvm" ]]; then
+  curl -L https://get.rvm.io | bash -s -- --ignore-dotfiles
+fi
+
+if [[ "$(uname)" == "Darwin" ]]; then
+  codename="osx"
+else
+  codename=$(lsb_release --codename --short)
+fi
+
+source "$HOME/.rvm/scripts/rvm"
+
+PATH="$HOME/.sm/bin:$HOME/.sm/pkg/active/bin:$PATH"
+
+rvm autolibs smf
+rvm install $ruby --movable -C "$configure_flags"
+rvm prepare $ruby
+
+ssh "www-data@hellobits.com" "mkdir -p /var/www/rubies/${codename}"
+scp "ruby-${ruby}.tar.bz2" "www-data@hellobits.com:/var/www/rubies/${codename}/"
