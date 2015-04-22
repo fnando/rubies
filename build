@@ -43,7 +43,7 @@ source "$HOME/.rvm/scripts/rvm"
 
 PATH="$HOME/.sm/bin:$HOME/.sm/pkg/active/bin:$PATH"
 
-rvm autolibs smf
+rvm autolibs read-only
 rvm install $ruby --movable -C "$configure_flags"
 rvm prepare $ruby
 
